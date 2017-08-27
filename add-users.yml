@@ -1,13 +1,21 @@
 ---
+# ansible-playbook -i inventory/inventory.cfg -e password=something
 - name: Add Users to OpenShift
   hosts: ocplab
+  remote_user: ec2-user
 
   tasks:
+    - name: Install passlib library
+      yum:
+        name: python-passlib
+        state: present
+
     - name: Add admin user
       htpasswd:
         path: "{{htpasswd_path}}"
         name: "{{item}}"
         password: "{{password}}"
+      become: true
       with_items:
         - "admin"
         - "developer1"
@@ -15,6 +23,5 @@
         - "developer3"
         - "nexus"
   
-  tasks:
     - name: Cluster admin rights
       command: "oadm policy add-cluster-role-to-user cluster-admin admin"
