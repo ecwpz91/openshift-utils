@@ -1,0 +1,20 @@
+---
+- name: Add Users to OpenShift
+  hosts: ocplab
+
+  tasks:
+    - name: Add admin user
+      htpasswd:
+        path: "{{htpasswd_path}}"
+        name: "{{item}}"
+        password: "{{password}}"
+      with_items:
+        - "admin"
+        - "developer1"
+        - "developer2"
+        - "developer3"
+        - "nexus"
+  
+  tasks:
+    - name: Cluster admin rights
+      command: "oadm policy add-cluster-role-to-user cluster-admin admin"
