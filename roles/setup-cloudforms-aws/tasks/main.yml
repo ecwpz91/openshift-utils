@@ -1,0 +1,50 @@
+---
+- name: Create cloudforms instance
+  ec2:
+    instance_type: t2.large
+    image: "{{ami_id}}"
+    key_name: "{{key_name}}"
+    region: "{{region}}"
+    volumes:
+      - device_name: /dev/sdb
+        volume_type: gp2
+        volume_size: 20
+        delete_on_termination: true
+    count_tag:
+      Name: "cloudforms"
+    instance_tags:
+      Name: "cloudforms"
+    wait: true
+  register: ec2_cloudforms
+
+- debug:
+    msg: "{{ec2_cloudforms}}"
+
+- name: allocate a new elastic IP and associate it with cloudforms
+  ec2_eip:
+   device_id: "{{ec2_cloudforms['instances'][0]['id']}}"
+   region: "{{region}}"
+  register: cloudforms_elastic_ip
+
+- name: add public dns
+  route53:
+    zone: "{{public_dns_zone}}"
+    record: "cfme.{{public_dns_zone}}"
+    type: A
+    ttl: 300
+    value: "{{cloudforms_elastic_ip['public_ip']}}"
+    wait: yes
+    command: "create"
+    overwrite: yes
+
+- name: Wait for cloudforms SSH to come up
+  local_action: wait_for 
+                host={{cloudforms_elastic_ip['public_ip']}} 
+                port=22 
+                state=started
+
+
+- name: Configure cloudforms database
+  shell: "appliance_console_cli --internal --dbdisk /dev/sdb --region 0 --password smartvm"
+  delegate_to: "{{cloudforms_elastic_ip['public_ip']}}"
+

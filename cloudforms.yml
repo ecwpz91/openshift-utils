@@ -1,0 +1,12 @@
+---
+# Provisions cloudforms in AWS, requests an AMI
+- name: Provision Cloudforms
+  hosts: local
+  remote_user: ec2-user
+
+  vars:
+    - ami_id: ami-e110f899
+    - key_name: gnunn
+
+  roles:
+    - setup-cloudforms-aws
