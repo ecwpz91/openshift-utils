@@ -5,6 +5,7 @@
     image: "{{ami_id}}"
     key_name: "{{key_name}}"
     region: "{{region}}"
+    group: "{{ web_ssh_security_group }}"
     volumes:
       - device_name: /dev/sdb
         volume_type: gp2
@@ -43,8 +44,9 @@
                 port=22 
                 state=started
 
-
 - name: Configure cloudforms database
-  shell: "appliance_console_cli --internal --dbdisk /dev/sdb --region 0 --password smartvm"
+  shell: "appliance_console_cli --internal --dbdisk /dev/xvdb --region 0 --password smartvm"
   delegate_to: "{{cloudforms_elastic_ip['public_ip']}}"
+  becomes: true
+  become_user: root
 

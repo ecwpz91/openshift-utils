@@ -1,0 +1,11 @@
+---
+# Provisions cloudforms in AWS, requests an AMI
+- name: Provision Cloudforms
+  hosts: local
+  remote_user: ec2-user
+
+  vars:
+    - key_name: gnunn
+
+  roles:
+    - teardown-cloudforms-aws
