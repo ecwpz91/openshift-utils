@@ -44,9 +44,9 @@
                 port=22 
                 state=started
 
-- name: Configure cloudforms database
-  shell: "appliance_console_cli --internal --dbdisk /dev/xvdb --region 0 --password smartvm"
-  delegate_to: "{{cloudforms_elastic_ip['public_ip']}}"
-  becomes: true
-  become_user: root
-
+# - name: Configure cloudforms database
+#   shell: 'appliance_console_cli --internal --dbdisk /dev/xvdb --region 0 --password smartvm'
+#   delegate_to: "{{cloudforms_elastic_ip['public_ip']}}"
+#   become: yes
+#   become_user: root
+#   become_method: su
