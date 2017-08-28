@@ -2,7 +2,6 @@
 # Provisions cloudforms in AWS, requests an AMI
 - name: Provision Cloudforms
   hosts: local
-  remote_user: ec2-user
 
   vars:
     - ami_id: ami-e110f899
@@ -10,3 +9,46 @@
 
   roles:
     - setup-cloudforms-aws
+
+# Initialize database and providers
+- name: Initialize Cloudforms
+  hosts: cfme
+  remote_user: ec2-user
+
+  tasks:
+    From https://raw.githubusercontent.com/jritenour/cf-ansible-conf/master/ec2-db-create.yml
+    Database setup requires to be run as root and not sudo
+    - name: Enable root access
+      command: "sed -i 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys"  
+      become: true
+
+    - name: Configure cloudforms database
+      command: 'appliance_console_cli --internal --dbdisk /dev/xvdb --region 0 --password smartvm'
+      remote_user: root
+
+    - name: Wait for cloudforms https to come up
+      local_action: wait_for 
+                    host={{inventory_hostname}} 
+                    port=443
+                    state=started      
+
+    From https://raw.githubusercontent.com/jritenour/cf-ansible-conf/master/ec2-db-create.yml
+    - name: Add host AWS platform as provider
+      uri:
+        url: "https://{{ inventory_hostname }}/api/providers"
+        method: POST
+        user: admin
+        password: "smartvm"
+        validate_certs: no
+        headers:
+          Content-Type:  application/json
+        body_format: json
+        body:
+          type: "ManageIQ::Providers::Amazon::CloudManager"
+          name:  Amazon EC2
+          provider_region: "{{ region }}"
+          credentials:
+            userid: "{{ lookup('env','AWS_ACCESS_KEY_ID') }}"
+            password: "{{ lookup('env','AWS_SECRET_ACCESS_KEY') }}"
+      retries: 3
+      delay: 10

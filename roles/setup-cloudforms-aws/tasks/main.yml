@@ -18,9 +18,6 @@
     wait: true
   register: ec2_cloudforms
 
-- debug:
-    msg: "{{ec2_cloudforms}}"
-
 - name: allocate a new elastic IP and associate it with cloudforms
   ec2_eip:
    device_id: "{{ec2_cloudforms['instances'][0]['id']}}"
@@ -43,10 +40,3 @@
                 host={{cloudforms_elastic_ip['public_ip']}} 
                 port=22 
                 state=started
-
-# - name: Configure cloudforms database
-#   shell: 'appliance_console_cli --internal --dbdisk /dev/xvdb --region 0 --password smartvm'
-#   delegate_to: "{{cloudforms_elastic_ip['public_ip']}}"
-#   become: yes
-#   become_user: root
-#   become_method: su
