@@ -1,19 +1,31 @@
 ---
 # Adds a set of test users to OpenShift
-# ansible-playbook -i inventory/inventory.cfg -e password=something
-- name: Provision Nexus on AWS with persistent storage
+# ansible-playbook -i inventory/inventory.cfg -e password=something -e az=us-west-2c
+- name: Provision AWS persistent storage
+  hosts: local
+  remote_user: ec2-user
+
+  vars:
+    admin_user: "admin"
+
+  pre_tasks:
+    - name: Openshift login
+      command: "oc login -u {{admin_user}} -p {{password}} {{master_url}}"
+
+  roles:
+    - setup-aws-storage
+
+
+- name: Provision Nexus
   hosts: local
   remote_user: ec2-user
 
   vars:
     oc_user: "nexus"
 
-  pre-tasks:
+  pre_tasks:
     - name: Openshift login
-      command: "oc login -u {{oc_user}} {{master_url}}"
+      command: "oc login -u {{oc_user}} -p {{password}} {{master_url}}"
 
   roles:
-    - setup-aws-storage
     - setup-nexus-aws
-
-

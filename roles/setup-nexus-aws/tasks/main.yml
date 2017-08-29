@@ -1,12 +1,9 @@
 ---
-- name: Provision persistent volume claim
-  command: "oc create -f ../files/nexus-pv.yml"
-
-- name: Provision nexus template
-  command: "oc create -f https://raw.githubusercontent.com/OpenShiftDemos/nexus/master/nexus2-persistent-template.yaml -n openshift"
-
 - name: Create nexus project
   command: "oc new-project --display-name=Nexus nexus"
+
+- name: Provision nexus template
+  command: "oc create -f roles/setup-nexus-aws/files/persistent-nexus-template.yml"
 
 - name: Create nexus application
   command: "oc new-app nexus2-persistent -p SERVICE_NAME=nexus"

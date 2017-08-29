@@ -1,9 +1,9 @@
 ---
 - name: Check parameters
-  - fail: msg="Variable '{{ item }}' is not defined or is empty"
-    when: (item not in vars) or vars[item] == ''
-    with_items: 
-      - az
+  fail: msg="Variable '{{ item }}' is not defined or is empty"
+  when: (item not in vars) or vars[item] == ''
+  with_items: 
+    - az
 
 - name: Create storage class file
   template:
