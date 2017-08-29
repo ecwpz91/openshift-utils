@@ -6,13 +6,9 @@
   remote_user: ec2-user
 
   tasks:
-    # - name: Install passlib library
-    #   yum:
-    #     name: python-passlib
-    #     state: present
-
+    # htpasswd module requires passlib, just call httppasswd directlt
     - name: Add demo users
-      shell: "htpasswd -b {{htpasswd_path}} {{item}} {{password}}"
+      command: "htpasswd -b {{htpasswd_path}} {{item}} {{password}}"
       become: true
       with_items:
         - "admin"

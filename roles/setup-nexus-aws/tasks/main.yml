@@ -1,0 +1,16 @@
+---
+- name: Provision persistent volume claim
+  command: "oc create -f ../files/nexus-pv.yml"
+
+- name: Provision nexus template
+  command: "oc create -f https://raw.githubusercontent.com/OpenShiftDemos/nexus/master/nexus2-persistent-template.yaml -n openshift"
+
+- name: Create nexus project
+  command: "oc new-project --display-name=Nexus nexus"
+
+- name: Create nexus application
+  command: "oc new-app nexus2-persistent -p SERVICE_NAME=nexus"
+
+- name: Output MAVEN_MIRROR_URL
+  debug:
+    msg: "Use this URL in OpenShift for MAVEN_MIRROR_URL 'http://nexus.nexus:8081/nexus/content/groups/public'"
