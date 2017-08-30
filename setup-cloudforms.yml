@@ -1,5 +1,6 @@
 ---
-# Provisions cloudforms in AWS, requests an AMI
+# Provisions cloudforms in AWS, requires an AMI. See Cloudforms documentation.
+# run-playbook.sh setup-cloudforms.yml
 - name: Provision Cloudforms
   hosts: local
 
@@ -16,8 +17,8 @@
   remote_user: ec2-user
 
   tasks:
-    From https://raw.githubusercontent.com/jritenour/cf-ansible-conf/master/ec2-db-create.yml
-    Database setup requires to be run as root and not sudo
+    # From https://raw.githubusercontent.com/jritenour/cf-ansible-conf/master/ec2-db-create.yml
+    # Database setup requires to be run as root and not sudo
     - name: Enable root access
       command: "sed -i 's/^.*ssh-rsa/ssh-rsa/p' /root/.ssh/authorized_keys"  
       become: true
@@ -32,7 +33,7 @@
                     port=443
                     state=started      
 
-    From https://raw.githubusercontent.com/jritenour/cf-ansible-conf/master/ec2-db-create.yml
+    # From https://raw.githubusercontent.com/jritenour/cf-ansible-conf/master/ec2-db-create.yml
     - name: Add host AWS platform as provider
       uri:
         url: "https://{{ inventory_hostname }}/api/providers"
