@@ -1,6 +1,6 @@
 ---
 # Adds a set of test users to OpenShift
-# ansible-playbook -i inventory/inventory.cfg -e password=something -e az=us-west-2c
+# ansible-playbook -i inventory/inventory.cfg -e password=something -e az=us-west-2c setup-nexus-aws.yml
 - name: Provision AWS persistent storage
   hosts: local
   remote_user: ec2-user

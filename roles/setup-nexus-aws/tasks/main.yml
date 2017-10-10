@@ -10,4 +10,4 @@
 
 - name: Output MAVEN_MIRROR_URL
   debug:
-    msg: "Use this URL in OpenShift for MAVEN_MIRROR_URL 'http://nexus.nexus:8081/nexus/content/groups/public'"
+    msg: "Use this URL in OpenShift for MAVEN_MIRROR_URL 'http://nexus.nexus:8081/content/groups/public'"

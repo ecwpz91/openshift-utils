@@ -31,7 +31,11 @@
       local_action: wait_for 
                     host={{inventory_hostname}} 
                     port=443
-                    state=started      
+                    state=started
+
+    - name: Wait 30 seconds     
+      pause:
+        seconds: 30
 
     # From https://raw.githubusercontent.com/jritenour/cf-ansible-conf/master/ec2-db-create.yml
     - name: Add host AWS platform as provider
