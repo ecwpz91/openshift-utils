@@ -16,6 +16,14 @@
   hosts: cfme
   remote_user: ec2-user
 
+  pre_tasks:
+    - name: Verify AWS Environment Variables
+      fail: msg="AWS environment variable are not defined or are empty"
+      when: lookup('env',item) == ''
+      with_items: 
+        - AWS_ACCESS_KEY_ID
+        - AWS_SECRET_ACCESS_KEY
+
   tasks:
     # From https://raw.githubusercontent.com/jritenour/cf-ansible-conf/master/ec2-db-create.yml
     # Database setup requires to be run as root and not sudo

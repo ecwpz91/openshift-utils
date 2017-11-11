@@ -1,6 +1,6 @@
 ---
 # Adds a set of test users to OpenShift
-# ansible-playbook -i inventory/inventory.cfg -e password=something -e az=us-west-2c setup-nexus-aws.yml
+# ansible-playbook -i inventory/inventory.cfg -e password=something -e setup-nexus.yml
 - name: Provision AWS persistent storage
   hosts: local
   remote_user: ec2-user
@@ -24,3 +24,6 @@
   pre_tasks:
     - name: Openshift login
       command: "oc login -u {{oc_user}} -p {{password}} {{master_url}}"
+
+    - name: Create nexus project
+      command: "oc new-project nexus --display-name=Nexus"

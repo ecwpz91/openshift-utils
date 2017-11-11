@@ -1,23 +1,13 @@
 ---
 # Adds a set of test users to OpenShift
-# ansible-playbook -i inventory/inventory.cfg -e password=something
+# ansible-playbook -i inventory/inventory.cfg -e password=something -e prefix=developer
 - name: Add Users to OpenShift
   hosts: ocplab
   remote_user: ec2-user
 
   tasks:
     # htpasswd module requires passlib, just call httppasswd directlt
-    - name: Add demo users
-      command: "htpasswd -b {{htpasswd_path}} {{item}} {{password}}"
+    - name: Add users
+      command: "htpasswd -b {{htpasswd_path}} {{prefix}}{{item}} {{password}}"
       become: true
-      with_items:
-        - "admin"
-        - "developer1"
-        - "developer2"
-        - "developer3"
-        - "developer4"
-        - "developer5"
-        - "nexus"
-  
-    - name: Cluster admin rights
-      command: "oadm policy add-cluster-role-to-user cluster-admin admin"
+      with_sequence: start=0 end=50 format=%02d
