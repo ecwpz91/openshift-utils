@@ -1,0 +1,134 @@
+---
+# Creates an AWS VM with a terminal accessible via a web browser.
+# I find this useful for when people cannot get oc or git installed
+# on their laptops for various reasons
+#
+# It uses shell in a box
+#
+# run-playbook.sh create-terminal-vm.yml
+- name: Provision Terminal (ShellInABox)
+  hosts: local
+
+  vars:
+    - generic_user_prefix: developer
+    - generic_user_count: 5
+    - generic_user_password: changeme!
+    - ami_size: t2.medium
+    - ami_id: ami-82bd4ffa
+    - aws_key_pair: gnunn
+    - openshift_version: "37"
+    - public_dns_zone: "ocplab.com"
+
+  pre_tasks:
+    - name: Verify AWS Environment Variables
+      fail: msg="AWS environment variable are not defined or are empty"
+      when: lookup('env',item) == ''
+      with_items: 
+        - AWS_ACCESS_KEY_ID
+        - AWS_SECRET_ACCESS_KEY
+
+  tasks:
+    - name: Provision VM
+      ec2:
+        instance_type: "{{ami_size}}"
+        image:  "{{ami_id}}"
+        region: "{{region}}"
+        wait: true
+        key_name: "{{aws_key_pair}}"
+        group: ['{{web_ssh_security_group}}']
+        count_tag:
+          Name: "terminal"
+        instance_tags:
+          Name: "terminal"
+        exact_count: 1
+      register: ec2_terminal
+
+    - name: allocate a new elastic IP and associate it with terminal
+      ec2_eip:
+        device_id: "{{ec2_terminal['tagged_instances'][0]['id']}}"
+        region: "{{region}}"
+        release_on_disassociation: true
+      register: terminal_elastic_ip
+
+    - name: Register VM facts
+      set_fact:
+        terminal_private_ip: "{{ec2_terminal['tagged_instances'][0]['private_ip']}}"
+        terminal_public_ip: "{{terminal_elastic_ip['public_ip']}}"
+
+    - name: Wait for terminal SSH to come up
+      local_action: wait_for 
+                    host={{ terminal_public_ip }} 
+                    port=22 
+                    state=started
+
+    - name: Install openshift repo
+      yum:
+        name: "centos-release-openshift-origin{{openshift_version}}"
+        state: latest
+      become: true
+      delegate_to: "{{terminal_public_ip}}"
+      remote_user: "ec2-user"
+
+    - name: Install components
+      yum: 
+        name:
+          - origin-clients
+          - git
+          - openssl
+          - shellinabox
+        state: latest
+      become: true
+      delegate_to: "{{terminal_public_ip}}"
+      remote_user: "ec2-user"
+
+    - name: Disable SELinux
+      selinux:
+        state: disabled
+      become: true
+      delegate_to: "{{terminal_public_ip}}"
+      remote_user: "ec2-user"      
+
+    - name: Update shellinabox configuration
+      replace:
+        path: /etc/sysconfig/shellinaboxd
+        regexp: "4200"
+        replace: "443"
+      ignore_errors: true
+      become: true
+      delegate_to: "{{terminal_public_ip}}"
+      remote_user: "ec2-user"      
+
+    - name: Enable shellinabox service
+      systemd:
+        name: shellinaboxd
+        enabled: yes
+        state: started
+      become: true
+      delegate_to: "{{terminal_public_ip}}"
+      remote_user: "ec2-user"      
+
+    - name: Add users
+      shell: useradd --home /home/{{item}} {{item}} && echo {{item}}:{{generic_user_password}} | chpasswd –crypt-method=SHA512
+      with_sequence: count={{generic_user_count}} format="{{generic_user_prefix}}%02d"
+      become: true
+      delegate_to: "{{terminal_public_ip}}"
+      remote_user: "ec2-user"
+
+    - name: Add public dns
+      route53:
+        zone: "{{public_dns_zone}}"
+        record: "terminal.{{public_dns_zone}}"
+        type: A
+        ttl: 300
+        value: "{{terminal_public_ip}}"
+        wait: yes
+        command: "create"
+        overwrite: yes
+
+    - name: Rebooting ...
+      command: shutdown -r now "Reboot required for disabling selinux"
+      ignore_errors: true
+      become: true
+      delegate_to: "{{terminal_public_ip}}"
+      remote_user: "ec2-user"
+      

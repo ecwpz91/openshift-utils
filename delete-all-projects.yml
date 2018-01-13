@@ -1,0 +1,10 @@
+---
+# Deletes all projects from workshop users, useful when you are re-using the same environment between workshops
+# ansible-playbook -i inventory/inventory.cfg -e prefix=developer -e password=something delete-all-projects.yml
+- name: Delete all projects
+  hosts: local
+
+  tasks:
+    - name: Delete all user projects
+      shell: "oc login -u {{prefix}}{{item}} -p {{password}} {{master_url}} && oc get projects -o name | grep developer | xargs oc delete"
+      with_sequence: start=1 end=30 format=%02d      

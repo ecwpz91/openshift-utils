@@ -1,1 +1,1 @@
-This is a small set of ansible playbooks I use to provision and manage my OpenShift demo environment.
+This is a small set of ansible playbooks I use to provision and manage my OpenShift demo environment. It's not really intended for re-use but if you find something useful feel to grab it.
