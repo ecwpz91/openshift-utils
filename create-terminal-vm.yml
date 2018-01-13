@@ -18,6 +18,7 @@
     - aws_key_pair: gnunn
     - openshift_version: "37"
     - public_dns_zone: "ocplab.com"
+    - volume_size: 30
 
   pre_tasks:
     - name: Verify AWS Environment Variables
@@ -28,6 +29,12 @@
         - AWS_SECRET_ACCESS_KEY
 
   tasks:
+    - name: Find ami id with ami
+      ec2_ami_find:
+        ami_id: "{{ami_id}}"
+        region: "{{region}}"
+      register: "ami_find"
+  
     - name: Provision VM
       ec2:
         instance_type: "{{ami_size}}"
@@ -36,6 +43,11 @@
         wait: true
         key_name: "{{aws_key_pair}}"
         group: ['{{web_ssh_security_group}}']
+        volumes:
+          - device_name: "{{ami_find['results'][0]['root_device_name']}}"
+            volume_size: "{{volume_size}}"
+            volume_type: gp2        
+            delete_on_termination: true
         count_tag:
           Name: "terminal"
         instance_tags:
