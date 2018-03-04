@@ -1,29 +1,29 @@
 ---
 # Adds a set of test users to OpenShift
 # ansible-playbook -i inventory/inventory.cfg -e password=something -e setup-nexus.yml
-- name: Provision AWS persistent storage
-  hosts: local
-  remote_user: ec2-user
+#- name: Provision AWS persistent storage
+#  hosts: local
+#  remote_user: ec2-user
 
 - name: Provision Nexus
   hosts: local
   remote_user: ec2-user
 
   vars:
-    oc_user: "nexus"
+    oc_user: "admin"
     vol_size: "20Gi"
 
   tasks:
     - name: Install nexus
-      shell: "oc process -p SERVICE_NAME=nexus -p VOLUME_CAPACITY={{vol_size}} -f https://raw.githubusercontent.com/OpenShiftDemos/nexus/master/nexus2-persistent-template.yaml  | oc create -f -"
+      shell: "oc process -p SERVICE_NAME=nexus -p VOLUME_CAPACITY={{vol_size}} -f https://raw.githubusercontent.com/OpenShiftDemos/nexus/master/nexus3-persistent-template.yaml  | oc create -f -"
 
     - name: Output MAVEN_MIRROR_URL
       debug:
-        msg: "Use this URL in OpenShift for MAVEN_MIRROR_URL 'http://nexus.nexus:8081/content/groups/public'"    
+        msg: "Use this URL in OpenShift for MAVEN_MIRROR_URL 'http://nexus.ci.svc.cluster.local:8081/repository/maven-all-public/'"    
 
   pre_tasks:
     - name: Openshift login
       command: "oc login -u {{oc_user}} -p {{password}} {{master_url}}"
 
-    - name: Create nexus project
-      command: "oc new-project nexus --display-name=Nexus"
+    - name: Create ci project
+      command: "oc new-project ci --display-name=CI"
