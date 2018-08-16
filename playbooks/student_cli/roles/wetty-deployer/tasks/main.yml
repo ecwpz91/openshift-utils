@@ -1,0 +1,42 @@
+---
+# tasks file for containerized-wetty-deployer
+- name: containerized-wetty-deployer - Login via OpenShift CLI as system:admin
+  shell: "oc login -u system:admin"
+  
+
+- name: containerized-wetty-deployer - Upload Security Context Contstraint for Wetty
+  copy:
+    src: wetty-scc.yml
+    dest: ~/wetty-scc.yml
+
+- name: containerized-wetty-deployer - Create Security Context Contstraint for Wetty
+  shell: "oc create -f ~/wetty-scc.yml"
+  ignore_errors: true
+
+
+- name: containerized-wetty-deployer - Upload Template for OpenSSH Container
+  copy:
+    src: wetty-openssh.yml
+    dest: ~/wetty-openssh.yml
+  
+- name: containerized-wetty-deployer - Process Template for OpenSSH Container
+  shell: "oc process -f ~/wetty-openssh.yml -n {{ component_namespace }} -p WETTY_PASSWORD={{ workshop_password }} -p APP_DOMAIN=apps.ocp.{{ domain_name }} | oc create -f -"
+  ignore_errors: true
+
+- name: containerized-wetty-deployer - Upload Template for Wetty Ephemeral Container
+  copy:
+    src: wetty-ephemeral.yml
+    dest: ~/wetty-ephemeral.yml
+
+- name: containerized-wetty-deployer - Create Template for Wetty Ephemeral Container
+  shell: "oc create -f ~/wetty-ephemeral.yml -n {{ component_namespace }}"
+  ignore_errors: true
+
+- name: containerized-wetty-deployer - Upload Template for Wetty Persistant Container
+  copy:
+    src: wetty-persistant.yml
+    dest: ~/wetty-persistant.yml
+
+- name: containerized-wetty-deployer - Create Template for Wetty Persistant Container
+  shell: "oc create -f ~/wetty-persistant.yml -n {{ component_namespace }}"
+  ignore_errors: true

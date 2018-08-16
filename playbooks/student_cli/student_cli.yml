@@ -28,7 +28,13 @@
     openshift_test_users_prefix: user
     openshift_test_users_password: changeme!
     openshift_test_users_count: 20
+    # defaults file for containerized-wetty-deployer
+    # This is the user's login password in the terminal.
+    workshop_password: wetty
+    # The namespace to which ot add the containerized Wetty components.
+    component_namespace: wetty
   roles:
-    - { role: wetty }
-    - { role: oc }
-    - { role: users }
+    - { role: wetty-deployer }
+    # - { role: wetty }
+    # - { role: oc }
+    # - { role: users }

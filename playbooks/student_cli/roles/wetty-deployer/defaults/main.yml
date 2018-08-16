@@ -1,0 +1,6 @@
+---
+# defaults file for containerized-wetty-deployer
+# This is the user's login password in the terminal.
+workshop_password: wetty
+# The namespace to which ot add the containerized Wetty components.
+component_namespace: openshift
