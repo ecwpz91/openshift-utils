@@ -14,4 +14,5 @@ function cleanup_dcmetromap() {
  delete_project_name "demo"
  delete_project_name "bluegreen"
  delete_project_name "cicd"
+ delete_project_name "student"
 }
