@@ -1,0 +1,257 @@
+---
+
+- name: install required packages
+  yum:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - make
+    - nmap-ncat
+    - npm
+    - gcc-c++
+  become: true
+
+- name: install wetty globaly
+  command: npm install wetty -g chdir=/home/{{amazon_user}}
+  args:
+    creates: /usr/lib/node_modules/wetty/bin/wetty.js
+  become: true
+
+- name: install the patch package
+  package:
+    name: patch
+    state: latest
+  become: true
+
+- name: hterm_all.js patch to handle iOS spaces
+  patch:
+    backup: yes
+    basedir: /
+    src: hterm_all.js-iOS-patch
+  become: true
+
+- name: create temporary file
+  tempfile:
+    state: file
+    suffix: cert
+  register: wetty_cert
+  delegate_to: localhost
+
+- name: append wetty certificates
+  shell: "cat {{item}} >> {{wetty_cert.path}}"
+  with_items:
+    - "{{master_ssl_ca_file}}"
+  delegate_to: localhost
+
+- name: copy master certificate
+  copy:
+    src: "{{wetty_cert.path}}"
+    dest: "/home/{{amazon_user}}/.ssh/cert.pem"
+  become: true
+  when: use_lets_encrypt
+
+- name: create temporary file
+  tempfile:
+    state: file
+    suffix: cert
+  register: wetty_privkey
+  delegate_to: localhost
+  when: use_lets_encrypt
+
+- name: append wetty keys
+  shell: "cat {{item}} >> {{wetty_privkey.path}}"
+  with_items:
+    - "{{master_ssl_key_file}}"
+  delegate_to: localhost
+  when: use_lets_encrypt
+
+- name: copy master key file
+  copy:
+    src: "{{wetty_privkey.path}}"
+    dest: "/home/{{amazon_user}}/.ssh/privkey.pem"
+  become: true
+  when: use_lets_encrypt
+
+- name: generate self-signed certificates
+  command: >
+    openssl req -new
+      -x509
+      -nodes
+      -days {{ openssl_days | default(3650) }}
+      -subj "/C={{ openssl_country | default('') }}/ST={{ openssl_state | default('') }}/L={{ openssl_city | default('') }}/O={{ openssl_organization | default('') }}/OU={{ openssl_unit | default('') }}/CN={{ public_dns_zone }}/emailAddress={{ domain_email_address }}"
+      -newkey rsa:2048
+      -keyout /home/{{amazon_user}}/.ssh/privkey.pem
+      -out /home/{{amazon_user}}/.ssh/cert.pem
+  args:
+    creates: /home/{{amazon_user}}/.ssh/*.pem
+  when: not use_lets_encrypt
+
+- name: set certificate permissions
+  file:
+    path:    "/home/{{amazon_user}}/.ssh/{{ item }}"
+    group:   "{{amazon_user}}"
+    owner:   "{{amazon_user}}"
+    mode:    0400
+  become: true
+  with_items:
+    - cert.pem
+    - privkey.pem
+
+- name: template systemd service file
+  template:
+    src:   "wetty.service.j2"
+    dest:  "/etc/systemd/system/wetty.service"
+    group: root
+    owner: root
+    mode:  0644
+  become: true
+  notify: wetty
+
+- name: update ssh config
+  copy:
+    src: sshd_config
+    dest: "/etc/ssh/sshd_config"
+    group: root
+    owner: root
+    mode: 0644
+  become: true
+  notify:
+    - sshd
+
+# - name: open firewalld port
+#   become: true
+#   firewalld:
+#     port: 8888/tcp
+#     permanent: true
+#     state: enabled
+
+- name: check firewalld status
+  command: rpm -q firewalld
+  register: rf_result
+  become: true
+  ignore_errors: yes
+
+- name: turn off firewalld
+  systemd:
+    name: firewalld
+    enabled: no
+    state: stopped
+  become: true
+  when: rf_result.rc == 0
+
+- name: check iptables status
+  command: service iptables status
+  register: ri_result
+  become: true
+  ignore_errors: yes
+  when: rf_result.rc != 0
+
+- name: open iptables port
+  iptables:
+    action: append
+    chain: OS_FIREWALL_ALLOW
+    destination_port: 8888
+    jump: ACCEPT
+    protocol: tcp
+    state: present
+  become: true
+  when:
+  - rf_result.rc != 0
+  - ri_result.rc == 0
+
+- name: append iptables rule
+  lineinfile:
+    path: /etc/sysconfig/iptables
+    insertbefore: "^COMMIT$"
+    line: "-A OS_FIREWALL_ALLOW -p tcp -m state --state NEW -m udp --dport 8888 -j ACCEPT"
+    state: present
+  become: true
+  when:
+  - rf_result.rc != 0
+  - ri_result.rc == 0
+
+- name: create selinux directory
+  file:
+    group: "{{amazon_user}}"
+    owner: "{{amazon_user}}"
+    mode:  0700
+    path:  "/home/{{amazon_user}}/.selinux"
+    state: directory
+  become: true
+
+- name: copy selinux modules
+  copy:
+    src:   "{{ item }}"
+    dest:  "/home/{{amazon_user}}/.selinux"
+    group: "{{amazon_user}}"
+    owner: "{{amazon_user}}"
+    mode:  0700
+  with_items:
+    - wetty.pp
+    - wetty.te
+  become: true
+  register: result
+
+- name: update selinux modules
+  command: semodule -i wetty.pp chdir=/home/{{amazon_user}}/.selinux
+  notify: wetty
+  become: true
+  when: result.changed
+
+- name: enable wetty on boot
+  service:
+    name: wetty
+    enabled: yes
+    state: started
+  become: true
+
+# - name: clone wetty repo
+#   git:
+#     clone: yes
+#     force: yes
+#     dest:  "/home/{{amazon_user}}/.wetty"
+#     repo:  "https://github.com/krishnasrinivas/wetty"
+#
+# - name:set repo permissions
+#   become: true
+#   file:
+#     recurse: yes
+#     path:    "/home/{{amazon_user}}/.wetty"
+#     group:   "{{amazon_user}}"
+#     owner:   "{{amazon_user}}"
+#     mode:    0700
+#
+# - name: install wetty source
+#   command: npm install chdir="/home/{{amazon_user}}/.wetty"
+
+- name: verify wetty status
+  shell: /usr/bin/ncat -v -C --ssl localhost 8888 < /dev/null
+  register: wetty_status
+  changed_when: "wetty_status.rc != 0"
+
+- name: ensure group exists
+  group:
+    name: "{{ generic_user_group }}"
+    state: present
+  become: true
+
+- name: add user accounts
+  user:
+   name: "{{ generic_user_prefix }}{{ item }}"
+   shell: /bin/bash
+   group: "{{ generic_user_group }}"
+   password: "{{ generic_user_prefix }}{{ item }}"
+   append: yes
+  with_sequence: count={{ generic_user_count }}
+  become: true
+
+- name: reboot server immediately
+  shell: "sleep 5 && /usr/bin/systemctl reboot"
+  async: 1
+  poll: 0
+  become: true
+  ignore_errors: yes
+
+- name: wait for host to come back
+  pause:
+    minutes: "{{reboot_wait_time}}"
