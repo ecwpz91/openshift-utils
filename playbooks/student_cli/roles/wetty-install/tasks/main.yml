@@ -40,7 +40,7 @@
 - name: append wetty certificates
   shell: "cat {{item}} >> {{wetty_cert.path}}"
   with_items:
-    - "{{master_ssl_ca_file}}"
+    - "/etc/letsencrypt/live/{{domain_name}}/cert.pem"
   delegate_to: localhost
 
 - name: copy master certificate
@@ -61,7 +61,7 @@
 - name: append wetty keys
   shell: "cat {{item}} >> {{wetty_privkey.path}}"
   with_items:
-    - "{{master_ssl_key_file}}"
+    - "/etc/letsencrypt/live/{{domain_name}}/privkey.pem"
   delegate_to: localhost
   when: use_lets_encrypt
 
