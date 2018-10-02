@@ -107,68 +107,68 @@
   become: true
   notify: wetty
 
-- name: update ssh config
-  copy:
-    src: sshd_config
-    dest: "/etc/ssh/sshd_config"
-    group: root
-    owner: root
-    mode: 0644
-  become: true
-  notify:
-    - sshd
-
-# - name: open firewalld port
+# - name: update ssh config
+#   copy:
+#     src: sshd_config
+#     dest: "/etc/ssh/sshd_config"
+#     group: root
+#     owner: root
+#     mode: 0644
 #   become: true
-#   firewalld:
-#     port: 8888/tcp
-#     permanent: true
-#     state: enabled
+#   notify:
+#     - sshd
 
-- name: check firewalld status
-  command: rpm -q firewalld
-  register: rf_result
+- name: open firewalld port
+  firewalld:
+    port: 8888/tcp
+    permanent: true
+    state: enabled
   become: true
-  ignore_errors: yes
 
-- name: turn off firewalld
-  systemd:
-    name: firewalld
-    enabled: no
-    state: stopped
-  become: true
-  when: rf_result.rc == 0
-
-- name: check iptables status
-  command: service iptables status
-  register: ri_result
-  become: true
-  ignore_errors: yes
-  when: rf_result.rc != 0
-
-- name: open iptables port
-  iptables:
-    action: append
-    chain: OS_FIREWALL_ALLOW
-    destination_port: 8888
-    jump: ACCEPT
-    protocol: tcp
-    state: present
-  become: true
-  when:
-  - rf_result.rc != 0
-  - ri_result.rc == 0
-
-- name: append iptables rule
-  lineinfile:
-    path: /etc/sysconfig/iptables
-    insertbefore: "^COMMIT$"
-    line: "-A OS_FIREWALL_ALLOW -p tcp -m state --state NEW -m udp --dport 8888 -j ACCEPT"
-    state: present
-  become: true
-  when:
-  - rf_result.rc != 0
-  - ri_result.rc == 0
+# - name: check firewalld status
+#   command: rpm -q firewalld
+#   register: rf_result
+#   become: true
+#   ignore_errors: yes
+#
+# - name: turn off firewalld
+#   systemd:
+#     name: firewalld
+#     enabled: no
+#     state: stopped
+#   become: true
+#   when: rf_result.rc == 0
+#
+# - name: check iptables status
+#   command: service iptables status
+#   register: ri_result
+#   become: true
+#   ignore_errors: yes
+#   when: rf_result.rc != 0
+#
+# - name: open iptables port
+#   iptables:
+#     action: append
+#     chain: OS_FIREWALL_ALLOW
+#     destination_port: 8888
+#     jump: ACCEPT
+#     protocol: tcp
+#     state: present
+#   become: true
+#   when:
+#   - rf_result.rc != 0
+#   - ri_result.rc == 0
+#
+# - name: append iptables rule
+#   lineinfile:
+#     path: /etc/sysconfig/iptables
+#     insertbefore: "^COMMIT$"
+#     line: "-A OS_FIREWALL_ALLOW -p tcp -m state --state NEW -m udp --dport 8888 -j ACCEPT"
+#     state: present
+#   become: true
+#   when:
+#   - rf_result.rc != 0
+#   - ri_result.rc == 0
 
 - name: create selinux directory
   file:
@@ -231,18 +231,18 @@
 
 - name: ensure group exists
   group:
-    name: "{{ generic_user_group }}"
+    name: "{{generic_user_group}}"
     state: present
   become: true
 
 - name: add user accounts
   user:
-   name: "{{ generic_user_prefix }}{{ item }}"
+   name: "{{generic_user_prefix}}{{item}}"
    shell: /bin/bash
-   group: "{{ generic_user_group }}"
-   password: "{{ generic_user_prefix }}{{ item }}"
+   group: "{{generic_user_group}}"
+   password: "{{generic_user_prefix}}{{item}}"
    append: yes
-  with_sequence: count={{ generic_user_count }}
+  with_sequence: count={{generic_user_count}}
   become: true
 
 - name: reboot server immediately
