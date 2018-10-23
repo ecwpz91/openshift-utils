@@ -1,7 +1,7 @@
 # file: roles/wetty/tasks/main.yml
 ---
 
-- name: Install required packages
+- name: install required packages
   become: yes
   yum:
     name: "{{ item }}"
@@ -12,7 +12,7 @@
     - npm
     - gcc-c++
 
-- name: Install Wetty Globaly
+- name: install wetty globaly
   become: yes
   command: npm install wetty -g chdir=/home/{{ system_user }}
   args:
@@ -21,14 +21,14 @@
 #-------------------------------------------------------
 # Let's Encrypt.
 #-------------------------------------------------------
-- name: Copy cert.pem to Wetty dir
+- name: copy cert.pem to wetty directory
   become: yes
   command: cp cert.pem /home/{{ system_user }}/.ssh/ chdir="/etc/letsencrypt/live/{{ workshop_prefix | lower }}.{{ hostvars[inventory_hostname]['ec2_tag_Index'] }}.{{ domain_name }}/"
   args:
     creates: /home/{{ system_user }}/.ssh/cert.pem
   when: letsencrypt
 
-- name: Copy privkey.pem to Wetty dir
+- name: copy privkey.pem to Wetty dir
   become: yes
   command: cp privkey.pem /home/{{ system_user }}/.ssh/ chdir="/etc/letsencrypt/live/{{ workshop_prefix | lower }}.{{ hostvars[inventory_hostname]['ec2_tag_Index'] }}.{{ domain_name }}/"
   args:
@@ -38,7 +38,7 @@
 #-------------------------------------------------------
 # Self-Signed Certs
 #-------------------------------------------------------
-- name: Generate Self Signed Certs
+- name: generate self signed certs
   command: >
     openssl req -new
       -x509
@@ -53,7 +53,7 @@
   with_items: "{{ openssl_self_signed }}"
   when: not letsencrypt
 
-- name: Set permissions on SSL certs
+- name: set permissions on ssl certs
   become: yes
   file:
     path:    "/home/{{ system_user }}/.ssh/{{ item }}"
@@ -65,7 +65,7 @@
     - privkey.pem
 
 # SYSTEMD
-- name: Template Systemd Service File for Wetty
+- name: template systemd service file for wetty
   become: yes
   template:
     src:   "wetty.service.j2"
@@ -85,7 +85,7 @@
     state:     present
     append:    yes
 
-- name: Update SSH Config
+- name: update ssh config
   become: yes
   copy:
     src: sshd_config
@@ -110,7 +110,7 @@
 #     state: enabled
 #  when: rf_result.rc == 0
 
-- name: Turn off Firewall
+- name: turn off Firewall
   become: yes
   systemd:
     name: firewalld
@@ -125,7 +125,7 @@
   ignore_errors: True
   when: rf_result.rc != 0
 
-- name: Open port in IPtables firewall
+- name: open port in iptables firewall
   become: yes
   iptables:
     action: append
@@ -138,14 +138,14 @@
   - rf_result.rc != 0
   - ri_result.rc == 0
 
-- name: Append IPtables rule to config file
+- name: append iptables rule to config file
   lineinfile:
     path: /etc/sysconfig/iptables
     insertbefore: "^COMMIT$"
     line: "-A OS_FIREWALL_ALLOW -p tcp -m state --state NEW -m udp --dport 8888 -j ACCEPT"
     state: present
 
-- name: Create SELinux dir
+- name: create selinux directory
   become: yes
   file:
     group: "{{ system_user }}"
@@ -154,7 +154,7 @@
     path:  "/home/{{ system_user }}/.selinux"
     state: directory
 
-- name: Copy over SELinux modules for Wetty
+- name: copy over selinux modules for wetty
   become: yes
   copy:
     src:   "{{ item }}"
@@ -167,7 +167,7 @@
     - wetty.te
   register: result
 
-- name: Update SELinux for Wetty
+- name: update selinux for wetty
   become: yes
   command: semodule -i wetty.pp chdir=/home/{{ system_user }}/.selinux
   notify: wetty
@@ -183,7 +183,7 @@
 ###########################################################
 #   Build from Source
 ###########################################################
-# - name: Clone Wetty
+# - name: Clone wetty
 #   git:
 #     clone: yes
 #     force: yes
@@ -205,7 +205,7 @@
 #-------------------------------------------------------
 # verify that wetty is running
 #-------------------------------------------------------
-- name: Verify that wetty is listening
+- name: verify that wetty is listening
   shell: ncat -v -C --ssl localhost 8888 < /dev/null
   register: wetty_status
   changed_when: "wetty_status.rc != 0"
