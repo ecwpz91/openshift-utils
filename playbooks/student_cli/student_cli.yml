@@ -74,7 +74,7 @@
     openssl_organization: "Me, Inc."
     openssl_unit: "IT"
   roles:
-    # - { role: wetty-install }
+    - { role: wetty-install }
     # - { role: wetty }
     # - { role: wetty-deployer }
     # - { role: oc }
