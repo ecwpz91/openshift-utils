@@ -30,27 +30,35 @@
     src: hterm_all.js-iOS-patch
   become: true
 
-- name: create temporary file
+- name: create temp cert file
   tempfile:
     state: file
     suffix: cert
   register: wetty_cert
   delegate_to: localhost
 
-- name: append wetty certificates
+- name: append wetty certs
   shell: "cat {{item}} >> {{wetty_cert.path}}"
   with_items:
     - "/etc/letsencrypt/live/{{domain_name}}/cert.pem"
   delegate_to: localhost
 
-- name: copy master certificate
+- name: set cert permissions
+  file:
+    path: "{{wetty_cert.path}}"
+    group: "{{amazon_user}}"
+    owner: "{{amazon_user}}"
+    mode: 0644
+  delegate_to: localhost
+  become: true
+
+- name: copy cert file
   copy:
     src: "{{wetty_cert.path}}"
     dest: "/home/{{amazon_user}}/.ssh/cert.pem"
-  become: true
   when: use_lets_encrypt
 
-- name: create temporary file
+- name: create temp key file
   tempfile:
     state: file
     suffix: cert
@@ -65,11 +73,19 @@
   delegate_to: localhost
   when: use_lets_encrypt
 
-- name: copy master key file
+- name: set key permissions
+  file:
+    path: "{{wetty_privkey.path}}"
+    group: "{{amazon_user}}"
+    owner: "{{amazon_user}}"
+    mode: 0644
+  delegate_to: localhost
+  become: true
+
+- name: copy key file
   copy:
     src: "{{wetty_privkey.path}}"
     dest: "/home/{{amazon_user}}/.ssh/privkey.pem"
-  become: true
   when: use_lets_encrypt
 
 - name: generate self-signed certificates
