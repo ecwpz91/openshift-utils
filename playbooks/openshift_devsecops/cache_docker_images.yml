@@ -17,3 +17,5 @@
        - docker.io/openshiftdemos/gogs:0.11.34
        - docker.io/openshiftdemos/sonarqube:7.0
        - docker.io/eclipse/che-server:6.5.0
+       - docker.io/openshift/deployment-example:v1
+       - docker.io/openshift/deployment-example:v2
