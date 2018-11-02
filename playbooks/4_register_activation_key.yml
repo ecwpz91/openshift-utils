@@ -1,0 +1,20 @@
+---
+
+# Do not use with Cloud Access
+- name: Register Nodes
+  hosts:  masters, nodes
+  remote_user: ec2-user
+  vars:
+    state: 'present'
+  tasks:
+   - name: activation key registration
+     redhat_subscription:
+       state: "present"
+       activationkey: "{{ rhsm_key_id }}"
+       org_id: "{{ rhsm_org_id }}"
+       force_register: yes
+     register: result
+     until: result is succeeded
+     retries: 10
+     delay: 5
+     become: true
