@@ -245,22 +245,6 @@
   register: wetty_status
   changed_when: "wetty_status.rc != 0"
 
-- name: ensure group exists
-  group:
-    name: "{{generic_user_group}}"
-    state: present
-  become: true
-
-- name: add user accounts
-  user:
-   name: "{{generic_user_prefix}}{{item}}"
-   shell: /bin/bash
-   group: "{{generic_user_group}}"
-   password: "{{generic_user_prefix}}{{item}}"
-   append: yes
-  with_sequence: count={{generic_user_count}}
-  become: true
-
 - name: reboot server immediately
   shell: "sleep 5 && /usr/bin/systemctl reboot"
   async: 1
