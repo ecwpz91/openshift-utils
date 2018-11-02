@@ -1,0 +1,12 @@
+---
+
+- name: configure openshift cluster admin
+  hosts: masters
+  remote_user: ec2-user
+  vars:
+    state: 'present'
+    username: "changeme!"
+  tasks:
+   - name: setup cluster admin
+     command: oc adm --config=/etc/origin/master/admin.kubeconfig policy add-cluster-role-to-user cluster-admin '{{ username }}'
+     become: true
